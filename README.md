@@ -13,3 +13,37 @@ Static single-page HTML project ready for Vercel.
 4. Deploy.
 
 Vercel serves `index.html` as the homepage. The original source page is kept as `date-proposal-premium.html`.
+
+## Save submissions to a Google Sheet
+
+When someone fills out the date/time/name step and picks food, the page can automatically
+send that submission (name, optional email, date, time, food choices, plus a server-stamped
+submission time) to a Google Sheet. This uses a small Google Apps Script "Web App" — no
+backend server needed.
+
+1. Create a new Google Sheet (sheets.new).
+2. In the Sheet, go to **Extensions → Apps Script**.
+3. Delete any starter code and paste in the contents of [`google-apps-script.js`](./google-apps-script.js).
+4. Click **Deploy → New deployment**.
+   - Type: **Web app**
+   - Execute as: **Me**
+   - Who has access: **Anyone**
+5. Click **Deploy**, authorize the script when prompted, then copy the **Web app URL**.
+6. In both `index.html` and `date-proposal-premium.html`, find this line near the top of the `<script>` block:
+   ```js
+   const SHEET_WEB_APP_URL = '';
+   ```
+   and paste your Web app URL between the quotes.
+7. Redeploy/publish the page. Every time someone reaches the food-selection step and taps
+   "See our plan," a new row is appended to the Sheet with the submission timestamp
+   (set by the script itself, not the browser), name, email (if given), date, time, and
+   food choices.
+
+Notes:
+- The name field is required so every row has a clear submitter; email stays optional.
+- If `SHEET_WEB_APP_URL` is left empty, the page works exactly as before and simply skips
+  the Sheet write.
+- The request is sent with `mode: 'no-cors'`, which is required for a plain static page to
+  POST to an Apps Script Web App without a CORS preflight; this means the page can't read
+  the response, so it fails silently if the URL is wrong — check the Sheet directly to confirm
+  it's working.

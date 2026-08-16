@@ -922,8 +922,16 @@
               <label for="timeInput"><span aria-hidden="true">🕒</span> Time</label>
               <select class="field-control" id="timeInput" required aria-describedby="timeHelp"></select>
             </div>
+            <div class="field">
+              <label for="nameInput"><span aria-hidden="true">🧑</span> Your name</label>
+              <input class="field-control" id="nameInput" type="text" autocomplete="name" placeholder="e.g. Alex" required />
+            </div>
+            <div class="field">
+              <label for="emailInput"><span aria-hidden="true">✉️</span> Email (optional)</label>
+              <input class="field-control" id="emailInput" type="email" autocomplete="email" placeholder="you@example.com" />
+            </div>
           </div>
-          <div class="helper" id="timeHelp"><span aria-hidden="true">💡</span><span>Times are shown in 30-minute intervals from 10:00 AM through 9:00 PM.</span></div>
+          <div class="helper" id="timeHelp"><span aria-hidden="true">💡</span><span>Times are shown in 30-minute intervals from 10:00 AM through 9:00 PM. Email is optional — only your name is needed.</span></div>
         </div>
 
         <div class="page-actions">
@@ -1042,8 +1050,31 @@
         currentPage: 'proposal',
         selectedDate: '',
         selectedTime: '18:00',
+        selectedName: '',
+        selectedEmail: '',
         selectedFoods: new Set()
       };
+
+      // Paste the Google Apps Script Web App URL here (see README) to enable
+      // automatic saving of submissions to a Google Sheet.
+      const SHEET_WEB_APP_URL = 'https://script.google.com/macros/s/AKfycbzaEEJLxlZbuATvnPxNyRmKhn2VivSFUfsPXQ8FB5sQlwPRUPJQvFReBt74quIc_JczRQ/exec';
+
+      function submitToSheet() {
+        if (!SHEET_WEB_APP_URL) return;
+        const payload = {
+          name: state.selectedName,
+          email: state.selectedEmail,
+          date: state.selectedDate,
+          time: state.selectedTime,
+          foods: [...state.selectedFoods].map((id) => FOODS.find((food) => food.id === id)?.name || id)
+        };
+        fetch(SHEET_WEB_APP_URL, {
+          method: 'POST',
+          mode: 'no-cors',
+          headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+          body: JSON.stringify(payload)
+        }).catch(() => {});
+      }
 
       const pageMap = {
         proposal: document.getElementById('proposalPage'),
@@ -1057,6 +1088,8 @@
       const noButton = document.getElementById('noButton');
       const dateInput = document.getElementById('dateInput');
       const timeInput = document.getElementById('timeInput');
+      const nameInput = document.getElementById('nameInput');
+      const emailInput = document.getElementById('emailInput');
       const dateNextButton = document.getElementById('dateNextButton');
       const foodGrid = document.getElementById('foodGrid');
       const selectionCount = document.getElementById('selectionCount');
@@ -1351,6 +1384,10 @@
         stopCelebration();
         state.selectedFoods.clear();
         state.selectedTime = '18:00';
+        state.selectedName = '';
+        state.selectedEmail = '';
+        nameInput.value = '';
+        emailInput.value = '';
         touchNoAttempts = 0;
         initializeDateAndTime();
         updateFoodSelectionUI();
@@ -1404,8 +1441,15 @@
           timeInput.focus();
           return;
         }
+        if (!nameInput.value.trim()) {
+          showToast('🧑 Please enter your name.');
+          nameInput.focus();
+          return;
+        }
         state.selectedDate = dateInput.value;
         state.selectedTime = timeInput.value;
+        state.selectedName = nameInput.value.trim();
+        state.selectedEmail = emailInput.value.trim();
         showPage('food');
       });
 
@@ -1417,6 +1461,7 @@
         buildConfirmation();
         showPage('confirmation');
         launchCelebration();
+        submitToSheet();
       });
 
       document.querySelectorAll('[data-back]').forEach((button) => {
