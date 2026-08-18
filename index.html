@@ -1,10 +1,30 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" prefix="og: https://ogp.me/ns#">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
   <meta name="theme-color" content="#ff6f91" />
-  <title>Will You Go on a Date With Me? 💕</title>
+  <title>Will You Go on a Date With Me? 💕 | Our Little Date Planner</title>
+  <meta name="description" content="Plan the perfect date with me! Choose a time, pick your favorite foods, and let's create beautiful memories together. 💕" />
+
+  <!-- Open Graph -->
+  <meta property="og:type" content="website" />
+  <meta property="og:title" content="Will You Go on a Date With Me? 💕" />
+  <meta property="og:description" content="Plan the perfect date with me! Choose a time, pick your favorite foods, and let's create beautiful memories together." />
+  <meta property="og:url" content="https://YOUR-DOMAIN.COM/" />
+  <meta property="og:image" content="https://YOUR-DOMAIN.COM/og-image.png" />
+
+  <!-- Twitter Card -->
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:title" content="Will You Go on a Date With Me? 💕" />
+  <meta name="twitter:description" content="Plan the perfect date with me! Choose a time, pick your favorite foods, and let's create beautiful memories together." />
+  <meta name="twitter:image" content="https://YOUR-DOMAIN.COM/og-image.png" />
+
+  <!-- Canonical & Favicon -->
+  <link rel="canonical" href="https://YOUR-DOMAIN.COM/" />
+  <link rel="icon" href="/favicon.ico" sizes="any" />
+  <link rel="icon" href="/icon.svg" type="image/svg+xml" />
+  <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
 
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -407,6 +427,11 @@
       opacity: 0.45;
       cursor: not-allowed;
       box-shadow: none;
+    }
+
+    #yesButton {
+      position: relative;
+      z-index: 1001;
     }
 
     #noButton {
@@ -927,6 +952,15 @@
               <input class="field-control" id="nameInput" type="text" autocomplete="name" placeholder="e.g. Alex" required />
             </div>
             <div class="field">
+              <label for="genderInput"><span aria-hidden="true">⚧</span> Gender</label>
+              <select class="field-control" id="genderInput" required>
+                <option value="" disabled selected>Select gender</option>
+                <option value="Male">Male</option>
+                <option value="Female">Female</option>
+                <option value="Other">Other</option>
+              </select>
+            </div>
+            <div class="field">
               <label for="emailInput"><span aria-hidden="true">✉️</span> Email (optional)</label>
               <input class="field-control" id="emailInput" type="email" autocomplete="email" placeholder="you@example.com" />
             </div>
@@ -981,10 +1015,6 @@
 
         <div class="love-message" id="loveMessage">Yay! I can’t wait to see you. Thank you for saying yes! ❤️🥰</div>
 
-        <div class="page-actions">
-          <button class="btn btn-ghost" type="button" data-back="food">← Edit</button>
-          <button class="btn btn-primary" id="restartButton" type="button">Start over ↻</button>
-        </div>
       </section>
     </section>
   </main>
@@ -1051,6 +1081,7 @@
         selectedDate: '',
         selectedTime: '18:00',
         selectedName: '',
+        selectedGender: '',
         selectedEmail: '',
         selectedFoods: new Set()
       };
@@ -1063,6 +1094,7 @@
         if (!SHEET_WEB_APP_URL) return;
         const payload = {
           name: state.selectedName,
+          gender: state.selectedGender,
           email: state.selectedEmail,
           date: state.selectedDate,
           time: state.selectedTime,
@@ -1073,7 +1105,13 @@
           mode: 'no-cors',
           headers: { 'Content-Type': 'text/plain;charset=utf-8' },
           body: JSON.stringify(payload)
-        }).catch(() => {});
+        }).then(() => {
+          // Note: with mode 'no-cors' the response is opaque, so we
+          // assume success if the fetch didn't reject.
+        }).catch((err) => {
+          console.error('Sheet submission failed:', err);
+          showToast('⚠️ Could not save to spreadsheet. Check the URL and redeploy.');
+        });
       }
 
       const pageMap = {
@@ -1089,6 +1127,7 @@
       const dateInput = document.getElementById('dateInput');
       const timeInput = document.getElementById('timeInput');
       const nameInput = document.getElementById('nameInput');
+      const genderInput = document.getElementById('genderInput');
       const emailInput = document.getElementById('emailInput');
       const dateNextButton = document.getElementById('dateNextButton');
       const foodGrid = document.getElementById('foodGrid');
@@ -1098,10 +1137,10 @@
       const confirmTime = document.getElementById('confirmTime');
       const confirmFood = document.getElementById('confirmFood');
       const loveMessage = document.getElementById('loveMessage');
-      const restartButton = document.getElementById('restartButton');
       const themeToggle = document.getElementById('themeToggle');
       const toast = document.getElementById('toast');
       const celebrationLayer = document.getElementById('celebrationLayer');
+      const appShell = document.getElementById('appShell');
 
       let toastTimer = null;
       let heartTimer = null;
@@ -1157,32 +1196,89 @@
         toastTimer = setTimeout(() => toast.classList.remove('show'), 2300);
       }
 
+      function clampNoButton() {
+        if (!noButtonMoved) return;
+        const cardRect = appShell.getBoundingClientRect();
+        const bw = noButton.offsetWidth;
+        const bh = noButton.offsetHeight;
+        const pad = 12;
+        let left = parseFloat(noButton.style.left) || 0;
+        let top = parseFloat(noButton.style.top) || 0;
+        left = Math.min(Math.max(left, pad), cardRect.width - bw - pad);
+        top = Math.min(Math.max(top, pad), cardRect.height - bh - pad);
+        noButton.style.left = `${Math.round(left)}px`;
+        noButton.style.top = `${Math.round(top)}px`;
+      }
+
       function moveNoButton() {
         if (state.currentPage !== 'proposal') return;
 
-        const rect = noButton.getBoundingClientRect();
-        const safePadding = 12;
-        const maxX = Math.max(safePadding, window.innerWidth - rect.width - safePadding);
-        const maxY = Math.max(safePadding, window.innerHeight - rect.height - safePadding);
+        // Switch to absolute positioning relative to the card
+        noButton.style.position = 'absolute';
+
+        const cardRect = appShell.getBoundingClientRect();
+        const bw = noButton.offsetWidth;
+        const bh = noButton.offsetHeight;
+        const pad = 12;
+        const buf = 14;
+
+        // Yes button bounds relative to the card
         const yesRect = yesButton.getBoundingClientRect();
+        const yL = yesRect.left - cardRect.left;
+        const yT = yesRect.top - cardRect.top;
+        const yR = yesRect.right - cardRect.left;
+        const yB = yesRect.bottom - cardRect.top;
 
-        let x = safePadding;
-        let y = safePadding;
-        let attempts = 0;
+        // Safety check: snap back if current position is outside card
+        let curLeft = parseFloat(noButton.style.left) || 0;
+        let curTop = parseFloat(noButton.style.top) || 0;
+        const xMax = Math.max(pad, cardRect.width - bw - pad);
+        const yMax = Math.max(pad, cardRect.height - bh - pad);
+        curLeft = Math.min(Math.max(curLeft, pad), xMax);
+        curTop = Math.min(Math.max(curTop, pad), yMax);
+        noButton.style.left = `${Math.round(curLeft)}px`;
+        noButton.style.top = `${Math.round(curTop)}px`;
 
-        do {
-          x = safePadding + Math.random() * Math.max(1, maxX - safePadding);
-          y = safePadding + Math.random() * Math.max(1, maxY - safePadding);
-          attempts += 1;
-        } while (
-          attempts < 20 &&
-          x < yesRect.right + 36 &&
-          x + rect.width > yesRect.left - 36 &&
-          y < yesRect.bottom + 36 &&
-          y + rect.height > yesRect.top - 36
-        );
+        // Check if two rectangles overlap
+        function overlaps(nx, ny) {
+          return nx < yR + buf && nx + bw > yL - buf &&
+                 ny < yB + buf && ny + bh > yT - buf;
+        }
 
-        noButton.style.position = 'fixed';
+        // Try random positions (up to 30 attempts)
+        let x = pad, y = pad, found = false;
+        for (let i = 0; i < 30; i++) {
+          const rx = pad + Math.random() * Math.max(1, xMax - pad);
+          const ry = pad + Math.random() * Math.max(1, yMax - pad);
+          if (!overlaps(rx, ry)) {
+            x = rx;
+            y = ry;
+            found = true;
+            break;
+          }
+        }
+
+        // Fallback: pick the farthest corner from the Yes button
+        if (!found) {
+          const corners = [
+            { x: pad, y: pad },
+            { x: xMax, y: pad },
+            { x: pad, y: yMax },
+            { x: xMax, y: yMax }
+          ];
+          const yesCX = (yL + yR) / 2;
+          const yesCY = (yT + yB) / 2;
+          let bestDist = -1;
+          for (const c of corners) {
+            if (overlaps(c.x, c.y)) continue;
+            const d = (c.x - yesCX) ** 2 + (c.y - yesCY) ** 2;
+            if (d > bestDist) { bestDist = d; x = c.x; y = c.y; }
+          }
+        }
+
+        x = Math.min(Math.max(x, pad), xMax);
+        y = Math.min(Math.max(y, pad), yMax);
+
         noButton.style.left = `${Math.round(x)}px`;
         noButton.style.top = `${Math.round(y)}px`;
         noButtonMoved = true;
@@ -1190,7 +1286,6 @@
 
       function resetNoButton() {
         if (!noButtonMoved) return;
-        noButton.style.position = 'relative';
         noButton.style.left = '';
         noButton.style.top = '';
         noButtonMoved = false;
@@ -1380,21 +1475,6 @@
         setTheme(saved || (systemDark ? 'dark' : 'light'));
       }
 
-      function restart() {
-        stopCelebration();
-        state.selectedFoods.clear();
-        state.selectedTime = '18:00';
-        state.selectedName = '';
-        state.selectedEmail = '';
-        nameInput.value = '';
-        emailInput.value = '';
-        touchNoAttempts = 0;
-        initializeDateAndTime();
-        updateFoodSelectionUI();
-        showPage('proposal');
-        resetNoButton();
-      }
-
       yesButton.addEventListener('click', proceedFromProposal);
       noButton.addEventListener('click', proceedFromProposal);
       noButton.addEventListener('pointerenter', (event) => {
@@ -1412,9 +1492,12 @@
         }
       });
 
-      window.addEventListener('resize', () => {
-        if (state.currentPage === 'proposal' && noButtonMoved) moveNoButton();
-      });
+      function reClampNoButton() {
+        if (state.currentPage === 'proposal' && noButtonMoved) clampNoButton();
+      }
+      window.addEventListener('resize', reClampNoButton);
+      window.addEventListener('orientationchange', reClampNoButton);
+      document.addEventListener('fullscreenchange', reClampNoButton);
 
       dateInput.addEventListener('change', () => {
         const today = localDateString();
@@ -1446,9 +1529,20 @@
           nameInput.focus();
           return;
         }
+        if (!genderInput.value) {
+          showToast('⚧ Please select your gender.');
+          genderInput.focus();
+          return;
+        }
+        if (emailInput.value.trim() && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(emailInput.value.trim())) {
+          showToast('✉️ Please enter a valid email address.');
+          emailInput.focus();
+          return;
+        }
         state.selectedDate = dateInput.value;
         state.selectedTime = timeInput.value;
         state.selectedName = nameInput.value.trim();
+        state.selectedGender = genderInput.value;
         state.selectedEmail = emailInput.value.trim();
         showPage('food');
       });
@@ -1471,7 +1565,6 @@
         });
       });
 
-      restartButton.addEventListener('click', restart);
       themeToggle.addEventListener('click', () => {
         const current = document.documentElement.dataset.theme;
         setTheme(current === 'dark' ? 'light' : 'dark');
