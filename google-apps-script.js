@@ -11,6 +11,9 @@
 
 const EXPECTED_HEADERS = ['Name', 'Gender', 'Email', 'Date', 'Time', 'Food choices', 'Submitted At', 'Submitted By'];
 
+/**
+ * Handles CORS preflight requests so the browser can read the response.
+ */
 function doPost(e) {
   try {
     // Log the raw request payload for debugging

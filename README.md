@@ -43,7 +43,6 @@ Notes:
 - The name field is required so every row has a clear submitter; email stays optional.
 - If `SHEET_WEB_APP_URL` is left empty, the page works exactly as before and simply skips
   the Sheet write.
-- The request is sent with `mode: 'no-cors'`, which is required for a plain static page to
-  POST to an Apps Script Web App without a CORS preflight; this means the page can't read
-  the response, so it fails silently if the URL is wrong — check the Sheet directly to confirm
-  it's working.
+- The request is sent as `application/json` with CORS enabled, so the page can verify the
+  response and show an error toast if something goes wrong. Google Apps Script web apps
+  automatically handle CORS when deployed with "Who has access: Anyone."
