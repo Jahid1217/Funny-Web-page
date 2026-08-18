@@ -453,8 +453,16 @@
       margin-top: 2px;
       color: var(--muted);
       font-size: 0.78rem;
-      opacity: 0.72;
+      visibility: hidden;
+      opacity: 0;
       text-align: center;
+      transition: opacity 0.35s ease;
+    }
+
+    .tease.visible {
+      visibility: visible;
+      opacity: 0.72;
+    }
     }
 
     .form-card {
@@ -1196,16 +1204,18 @@
         toastTimer = setTimeout(() => toast.classList.remove('show'), 2300);
       }
 
+      const teaseEl = document.querySelector('.tease');
+
       function clampNoButton() {
-        if (!noButtonMoved) return;
         const cardRect = appShell.getBoundingClientRect();
         const bw = noButton.offsetWidth;
         const bh = noButton.offsetHeight;
-        const pad = 12;
+        const xMax = Math.max(0, cardRect.width - bw);
+        const yMax = Math.max(0, cardRect.height - bh);
         let left = parseFloat(noButton.style.left) || 0;
         let top = parseFloat(noButton.style.top) || 0;
-        left = Math.min(Math.max(left, pad), cardRect.width - bw - pad);
-        top = Math.min(Math.max(top, pad), cardRect.height - bh - pad);
+        left = Math.min(Math.max(left, 0), xMax);
+        top = Math.max(0, Math.min(top, 600, yMax));
         noButton.style.left = `${Math.round(left)}px`;
         noButton.style.top = `${Math.round(top)}px`;
       }
@@ -1219,7 +1229,6 @@
         const cardRect = appShell.getBoundingClientRect();
         const bw = noButton.offsetWidth;
         const bh = noButton.offsetHeight;
-        const pad = 12;
         const buf = 14;
 
         // Yes button bounds relative to the card
@@ -1229,13 +1238,14 @@
         const yR = yesRect.right - cardRect.left;
         const yB = yesRect.bottom - cardRect.top;
 
+        const xMax = Math.max(0, cardRect.width - bw);
+        const yMax = Math.max(0, cardRect.height - bh);
+
         // Safety check: snap back if current position is outside card
         let curLeft = parseFloat(noButton.style.left) || 0;
         let curTop = parseFloat(noButton.style.top) || 0;
-        const xMax = Math.max(pad, cardRect.width - bw - pad);
-        const yMax = Math.max(pad, cardRect.height - bh - pad);
-        curLeft = Math.min(Math.max(curLeft, pad), xMax);
-        curTop = Math.min(Math.max(curTop, pad), yMax);
+        curLeft = Math.min(Math.max(curLeft, 0), xMax);
+        curTop = Math.max(0, Math.min(curTop, 600, yMax));
         noButton.style.left = `${Math.round(curLeft)}px`;
         noButton.style.top = `${Math.round(curTop)}px`;
 
@@ -1246,10 +1256,10 @@
         }
 
         // Try random positions (up to 30 attempts)
-        let x = pad, y = pad, found = false;
+        let x = 0, y = 0, found = false;
         for (let i = 0; i < 30; i++) {
-          const rx = pad + Math.random() * Math.max(1, xMax - pad);
-          const ry = pad + Math.random() * Math.max(1, yMax - pad);
+          const rx = Math.random() * Math.max(1, xMax);
+          const ry = Math.random() * Math.max(1, yMax);
           if (!overlaps(rx, ry)) {
             x = rx;
             y = ry;
@@ -1261,9 +1271,9 @@
         // Fallback: pick the farthest corner from the Yes button
         if (!found) {
           const corners = [
-            { x: pad, y: pad },
-            { x: xMax, y: pad },
-            { x: pad, y: yMax },
+            { x: 0, y: 0 },
+            { x: xMax, y: 0 },
+            { x: 0, y: yMax },
             { x: xMax, y: yMax }
           ];
           const yesCX = (yL + yR) / 2;
@@ -1276,12 +1286,15 @@
           }
         }
 
-        x = Math.min(Math.max(x, pad), xMax);
-        y = Math.min(Math.max(y, pad), yMax);
+        x = Math.min(Math.max(x, 0), xMax);
+        y = Math.max(0, Math.min(y, 600, yMax));
 
         noButton.style.left = `${Math.round(x)}px`;
         noButton.style.top = `${Math.round(y)}px`;
         noButtonMoved = true;
+
+        // Show the shy hint after the first move
+        if (teaseEl) teaseEl.classList.add('visible');
       }
 
       function resetNoButton() {
