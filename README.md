@@ -29,6 +29,9 @@ backend server needed.
    - Execute as: **Me**
    - Who has access: **Anyone**
 5. Click **Deploy**, authorize the script when prompted, then copy the **Web app URL**.
+   Opening that URL in an incognito/private window must show a JSON response with
+   `"status":"ok"`. If it shows **Access denied**, edit the deployment and change
+   **Who has access** to **Anyone**, then create a new version and deploy again.
 6. In both `index.html` and `date-proposal-premium.html`, find this line near the top of the `<script>` block:
    ```js
    const SHEET_WEB_APP_URL = '';
@@ -43,6 +46,6 @@ Notes:
 - The name field is required so every row has a clear submitter; email stays optional.
 - If `SHEET_WEB_APP_URL` is left empty, the page works exactly as before and simply skips
   the Sheet write.
-- The request is sent as `application/json` with CORS enabled, so the page can verify the
+- The request is sent as JSON with a simple text content type, so the page can verify the
   response and show an error toast if something goes wrong. Google Apps Script web apps
   automatically handle CORS when deployed with "Who has access: Anyone."

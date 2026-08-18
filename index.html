@@ -1302,10 +1302,15 @@
       }
 
       function resetNoButton() {
-        if (!noButtonMoved) return;
+        // Restore every inline property added by moveNoButton(). Keeping
+        // `position: absolute` here removes the button from its button row
+        // when the visitor comes back to the proposal page.
+        noButton.style.position = '';
         noButton.style.left = '';
         noButton.style.top = '';
         noButtonMoved = false;
+        touchNoAttempts = 0;
+        if (teaseEl) teaseEl.classList.remove('visible');
       }
 
       function proceedFromProposal() {
