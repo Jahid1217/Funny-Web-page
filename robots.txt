@@ -1,4 +1,4 @@
 User-agent: *
 Allow: /
 
-Sitemap: https://YOUR-DOMAIN.COM/sitemap.xml
+Sitemap: https://cleckme-ten.vercel.app/sitemap.xml
