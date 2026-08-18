@@ -1110,19 +1110,12 @@
         };
         fetch(SHEET_WEB_APP_URL, {
           method: 'POST',
+          mode: 'no-cors',
+          keepalive: true,
           headers: { 'Content-Type': 'text/plain;charset=utf-8' },
           body: JSON.stringify(payload)
-        }).then((res) => {
-          if (!res.ok) throw new Error('HTTP ' + res.status);
-          return res.json();
-        }).then((data) => {
-          if (data.status !== 'ok') {
-            console.error('Sheet error:', data.message);
-            showToast('⚠️ Could not save to spreadsheet. Check the URL and redeploy.');
-          }
         }).catch((err) => {
           console.error('Sheet submission failed:', err);
-          showToast('⚠️ Could not save to spreadsheet. Check the URL and redeploy.');
         });
       }
 
