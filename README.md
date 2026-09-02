@@ -44,14 +44,11 @@ backend server needed.
 
 Notes:
 - The name field is required so every row has a clear submitter; email stays optional.
-
 - If `SHEET_WEB_APP_URL` is left empty, the page works exactly as before and simply skips
   the Sheet write.
-
 - The request is sent as JSON with a simple text content type and `no-cors` mode, because
   Google Apps Script web app responses are not always readable from a static site even
   when the row is saved correctly.
-  
 - If opening the Web app URL directly returns `403 Forbidden` or `Access denied`, the
   Apps Script deployment is private or stale. Create a new Web app deployment with
   **Who has access: Anyone**, paste the new `/exec` URL into both HTML files, and redeploy
